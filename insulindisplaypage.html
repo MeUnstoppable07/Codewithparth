@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Sugar Level and Insulin Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+        }
+        .data-display, .insulin-display {
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            margin-top: 20px;
+        }
+        input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin-right: 10px;
+        }
+    </style>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Patient Sugar Level and Insulin Dashboard</h1>
+    <div class="dashboard">
+        <div class="data-display">
+            <h2>Current Sugar Level</h2>
+            <input type="number" id="sugarLevelInput" min="0" max="500" step="1" value="120">
+            <button onclick="updateSugarLevel()">Update Sugar Level</button>
+            <p>Patient's sugar level: <span id="currentSugarLevel">120</span> mg/dL</p>
+            <p>Normal range: 70 - 140 mg/dL</p>
+            <p>Status: <span id="status">Normal</span></p>
+        </div>
+        <div class="insulin-display">
+            <h2>Insulin Calculation</h2>
+            <p>Required insulin dose: <span id="insulinDose">0</span> units</p>
+            <p><small>Note: This is a simplified calculation and should not be used for medical decisions.</small></p>
+        </div>
+        <div class="chart-container">
+            <canvas id="sugarLevelChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+
+        function calculateInsulinDose(sugarLevel) {
+            // This is a simplified calculation and should not be used for actual medical decisions
+            const targetSugarLevel = 100;
+            const insulinSensitivityFactor = 50; // 1 unit of insulin reduces blood sugar by 50 mg/dL
+            let insulinDose = 0;
+
+            if (sugarLevel > targetSugarLevel) {
+                insulinDose = Math.round((sugarLevel - targetSugarLevel) / insulinSensitivityFactor);
+            }
+
+            return insulinDose;
+        }
+
+        function updateDashboard(sugarLevel) {
+            document.getElementById('currentSugarLevel').textContent = sugarLevel;
+            
+            let status = '';
+            if (sugarLevel < 70) {
+                status = 'Low (Hypoglycemia)';
+            } else if (sugarLevel >= 70 && sugarLevel <= 140) {
+                status = 'Normal';
+            } else {
+                status = 'High (Hyperglycemia)';
+            }
+            document.getElementById('status').textContent = status;
+
+            const insulinDose = calculateInsulinDose(sugarLevel);
+            document.getElementById('insulinDose').textContent = insulinDose;
+
+            updateChart(sugarLevel);
+        }
+
+        function updateChart(newValue) {
+            if (chart) {
+                chart.data.labels.push(new Date().toLocaleTimeString());
+                chart.data.datasets[0].data.push(newValue);
+                if (chart.data.labels.length > 10) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                chart.update();
+            } else {
+                const ctx = document.getElementById('sugarLevelChart').getContext('2d');
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [new Date().toLocaleTimeString()],
+                        datasets: [{
+                            label: 'Sugar Level (mg/dL)',
+                            data: [newValue],
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: 250
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateSugarLevel() {
+            const sugarLevelInput = document.getElementById('sugarLevelInput');
+            const sugarLevel = parseInt(sugarLevelInput.value, 10);
+            if (!isNaN(sugarLevel) && sugarLevel >= 0) {
+                updateDashboard(sugarLevel);
+            } else {
+                alert('Please enter a valid sugar level');
+            }
+        }
+
+        // Initial update
+        updateSugarLevel();
+    </script>
+</body>
+</html>
